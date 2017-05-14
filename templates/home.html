@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ==" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js" integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg==" crossorigin=""></script>
+    <script src="{{ url_for('static', filename='jquery-3.2.1.min.js') }}"></script>
+    <style>
+      html, body, #mapId {width: 100vw; height: 100vh;} body {padding: 0; margin: 0;}
+    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  </head>
+  <body>
+    <div id="mapId"></div>
+    <div id="location"></div>
+  <script src="{{ url_for('static', filename='leaflet-realtime.min.js') }}"></script>
+  <script>
+    var firstTime = true
+
+    var options = {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0
+    }
+
+    function error(err) {
+      console.warn(`ERROR(${err.code}): ${err.message}`);
+    }
+
+
+    var map = L.map('mapId'),
+      realtime = L.realtime({
+          url: 'https://00faeeec.ngrok.io',
+          crossOrigin: true,
+          type: 'json'
+      }, {
+          interval: 3 * 1000
+      }).addTo(map)
+
+    L.tileLayer('http://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWlrbWFrczk3IiwiYSI6IlVBV19fY0EifQ.JZ8BaxeLvHWvls09i48pPw', {
+      maxZoom: 18
+    }).addTo(map)
+    realtime.on('update', function() {
+      if (firstTime) {
+        map.fitBounds(realtime.getBounds(), {maxZoom: 3})
+        firstTime = false
+      }
+    })
+
+    function getLocation() {
+      if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(publishPosition, error, options);
+      } else {
+          console.log('not allowed')
+          x.innerHTML = "Geolocation is not supported by this browser."
+      }
+    }
+    function publishPosition(position) {
+      console.log(position.coords.latitude + ", " + position.coords.longitude)
+      $.post( "https://00faeeec.ngrok.io", {lat: position.coords.latitude, lon: position.coords.longitude}, function( data ) {
+        console.log(data)
+      })
+    }
+
+    setInterval(getLocation, 2000)
+  </script>
+  </body>
+</html>
