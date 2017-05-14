@@ -10,28 +10,38 @@
   </head>
   <body>
     <div id="mapId"></div>
+    <div id="location"></div>
+  <script src="dist/leaflet-realtime.min.js"></script>
   <script>
-    var mymap = L.map('mapId').fitWorld();
+    var map = L.map('mapId'),
+      realtime = L.realtime({
+          url: 'https://wanderdrone.appspot.com/',
+          crossOrigin: true,
+          type: 'json'
+      }, {
+          interval: 3 * 1000
+      }).addTo(map);
+
     L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/light-v9/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoibWlrbWFrczk3IiwiYSI6IlVBV19fY0EifQ.JZ8BaxeLvHWvls09i48pPw', {
       maxZoom: 18
-    }).addTo(mymap);
+    }).addTo(map);
+    realtime.on('update', function() {
+        map.fitBounds(realtime.getBounds(), {maxZoom: 3});
+    });
 
-    var marker = L.marker([40.709635, -73.986275]).addTo(mymap);
-
-    function onLocationFound(e) {
-      var radius = e.accuracy / 2;
-      L.marker(e.latlng).addTo(map)
-          .bindPopup("You are within " + radius + " meters from this point").openPopup();
-      L.circle(e.latlng, radius).addTo(map);
+    function getLocation() {
+      if (navigator.geolocation) {
+          navigator.geolocation.watchPosition(showPosition);
+      } else {
+          x.innerHTML = "Geolocation is not supported by this browser.";
+      }
     }
-    mymap.on('locationfound', onLocationFound);
-
-    function onLocationError(e) {
-      alert(e.message);
+    function showPosition(position) {
+        document.getElementById('location').innerHTML = "Latitude: " + position.coords.latitude +
+        "<br>Longitude: " + position.coords.longitude;
     }
-    mymap.on('locationerror', onLocationError);
 
-    mymap.locate({setView: true, maxZoom: 16});
+    setInterval(getLocation, 2000)
   </script>
   </body>
 </html>
